@@ -27,6 +27,8 @@ const STEAM = 0x9aa3b2
 // 맥 자원 단계별 몸 색: 평소 → 주의 → 높음 → 위험. 잠들면 조금 가라앉은 색.
 export const HEAT_COLORS = [BODY, 0xe2643c, 0xee4b2b, 0xc22a1e]
 const SLEEP_BODY = 0xa85f48
+// 우울할 때의 몸 색(자원 단계가 평소일 때만).
+const GLOOM_BODY = 0x8c98b3
 // 한 칸의 네 점(왼위 8 · 오른위 4 · 왼아래 2 · 오른아래 1) → 사분면 블록 글자.
 const QUAD = [' ', '▗', '▖', '▄', '▝', '▐', '▞', '▟', '▘', '▚', '▌', '▙', '▀', '▜', '▛', '█']
 const UNQUAD = new Map(QUAD.map((ch, bits) => [ch, bits]))
@@ -51,10 +53,10 @@ function withEyes(on) {
 
 const poseCache = new Map()
 
-// eyes: -1 왼쪽 0 정면 1 오른쪽 · eyeUp: 위를 봄 · blink: 두 눈 감음 · wink: 'L' | 'R' 한쪽만 감음
+// eyes: -1 왼쪽 0 정면 1 오른쪽 · eyeUp: 위를 봄 · blink: 두 눈 감음 · wink: 'L' | 'R' 한쪽만 감음 · shades: 선글라스(눈 줄에 검은 알 두 개)
 // armL / armR: 'down' | 'up' · legs: 0 | 1 (번갈아 쓰면 종종걸음)
 function pose(over) {
-  const p = Object.assign({ eyes: 0, eyeUp: false, blink: false, wink: '', armL: 'down', armR: 'down', legs: 0 }, over || {})
+  const p = Object.assign({ eyes: 0, eyeUp: false, blink: false, wink: '', shades: false, armL: 'down', armR: 'down', legs: 0 }, over || {})
   const key = JSON.stringify(p)
   if (poseCache.has(key)) return poseCache.get(key)
   const on = new Uint8Array(SW * SH)
@@ -65,6 +67,8 @@ function pose(over) {
   const ey = p.eyeUp ? 0 : 1
   if (!p.blink && p.wink !== 'L') on[ey * SW + 5 + p.eyes] = 0
   if (!p.blink && p.wink !== 'R') on[ey * SW + 13 + p.eyes] = 0
+  // 선글라스: 눈 줄을 가로지르는 검은 알 두 개(가운데 한 점은 코걸이로 남긴다). 눈 위치 · 깜빡임과 상관없이 덮는다.
+  if (p.shades) for (let x = 4; x <= 14; x += 1) if (x !== 9) on[1 * SW + x] = 0
   // 팔: 내리면 몸통 줄에서 옆으로, 올리면 한 줄 위로 꺾인다.
   for (const [x, y] of p.armL === 'up' ? [[1, 1], [2, 1], [2, 2]] : [[1, 2], [2, 2]]) put(x, y)
   for (const [x, y] of p.armR === 'up' ? [[16, 1], [17, 1], [16, 2]] : [[16, 2], [17, 2]]) put(x, y)
@@ -120,7 +124,18 @@ function turn(name, flip) {
 // 한 프레임 = 모양(s · e) + 자리(x: 반 칸 좌우, y: 반 줄 아래로) + 주변 효과(fx: 빈 칸에만 그리는 글자).
 function fr(x, y, over, fx) {
   const sp = pose(over)
-  return { s: sp.s, e: sp.e, x, y, fx: fx || [] }
+  return { s: sp.s, e: sp.e, x, y, fx: fx || [], over: over || {} }
+}
+
+// 같은 자세에 선글라스만 씌운 프레임. 돌아서는 그림(tf)은 얼굴이 정면이 아니라 그대로 둔다.
+const shadedCache = new WeakMap()
+function shaded(f) {
+  if (!f.over) return f
+  if (!shadedCache.has(f)) {
+    const sp = pose(Object.assign({}, f.over, { shades: true, eyeUp: false }))
+    shadedCache.set(f, Object.assign({}, f, { s: sp.s, e: sp.e }))
+  }
+  return shadedCache.get(f)
 }
 
 function tf(name, flip, x) {
@@ -366,6 +381,33 @@ const DOZE = [
   fr(HOME, 0, { eyes: 1 }),
 ]
 
+// 퇴근 5분 전 ~ 5분 뒤: 선글라스를 쓰고 춤춘다. 음표가 날린다.
+const SHADES = { shades: true }
+const PARTY = repeat(2, [
+  fr(HOME - 1, 0, Object.assign({ armL: 'up', legs: 1 }, SHADES), [mark(left(HOME - 1), 0, '♪', YELLOW)]),
+  fr(HOME - 1, 1, Object.assign({ armL: 'up' }, SHADES), [mark(left(HOME - 1), 0, '♪', YELLOW)]),
+  fr(HOME + 1, 0, Object.assign({ armR: 'up', legs: 1 }, SHADES), [mark(right(HOME + 1), 0, '♪', YELLOW)]),
+  fr(HOME + 1, 1, Object.assign({ armR: 'up' }, SHADES), [mark(right(HOME + 1), 0, '♪', YELLOW)]),
+  fr(HOME, 0, Object.assign({ armL: 'up', armR: 'up' }, SHADES)),
+  fr(HOME, 1, Object.assign({}, SHADES)),
+  fr(HOME, 0, Object.assign({ armL: 'up', armR: 'up', legs: 1 }, SHADES)),
+  fr(HOME, 1, Object.assign({}, SHADES)),
+])
+
+// 퇴근 5분 뒤 ~ 1시간 뒤: 주저앉아 한숨 쉬고 눈물 한 방울. 한 장에 0.45초씩 천천히 넘긴다.
+const GLOOM = [
+  fr(HOME, 1, { eyes: -1 }),
+  fr(HOME, 1, { eyes: -1 }),
+  fr(HOME, 1, { blink: true }),
+  fr(HOME, 1, { blink: true }, [mark(right(HOME), 1, '.', GRAY)]),
+  fr(HOME, 1, { blink: true }, [mark(right(HOME), 1, '.', GRAY), mark(right(HOME) + 1, 0, '.', GRAY)]),
+  fr(HOME, 1, { eyes: 1 }),
+  fr(HOME, 1, { eyes: 1 }),
+  fr(HOME, 1, { blink: true }, [mark(left(HOME), 1, "'", CYAN)]),
+  fr(HOME, 1, { blink: true }, [mark(left(HOME), 2, "'", CYAN)]),
+  fr(HOME, 1),
+]
+
 const within = (since, frames) => since >= 0 && since < frames.length * CLAWD_TICK_MS
 const at = (frames, since) => frames[Math.min(frames.length - 1, Math.floor(since / CLAWD_TICK_MS))]
 
@@ -382,7 +424,10 @@ export function clawdScene(st) {
   if (within(st.sinceSubmit, ONCE.salute)) return 'salute'
   if (st.busy) return LOOPS[st.activity] ? st.activity : 'think'
   if (within(st.sinceDone, ONCE.cheer)) return 'cheer'
+  // 퇴근 무렵의 기분(st.mood): 신날 때는 자던 세션도 일어나 춤추고, 우울은 잠든 세션에는 걸지 않는다.
+  if (st.mood === 'party') return 'party'
   if (st.asleep) return 'sleep'
+  if (st.mood === 'gloom') return 'gloom'
   if (st.dozing) return 'doze'
   return 'idle'
 }
@@ -396,8 +441,12 @@ export function clawdFrameOf(st, ms) {
   if (scene === 'idle') f = IDLE[tick % IDLE.length]
   else if (scene === 'sleep') f = SLEEP[Math.floor(Math.max(0, ms) / 1000) % SLEEP.length]
   else if (scene === 'doze') f = DOZE[Math.floor(Math.max(0, ms) / DOZE_TICK_MS) % DOZE.length]
+  else if (scene === 'gloom') f = GLOOM[Math.floor(Math.max(0, ms) / DOZE_TICK_MS) % GLOOM.length]
+  else if (scene === 'party') f = PARTY[tick % PARTY.length]
   else if (ONCE[scene]) f = at(ONCE[scene], st[SINCE[scene]])
   else f = LOOPS[scene][tick % LOOPS[scene].length]
+  // 신나는 시간에는 일하는 중에도 선글라스를 쓴다.
+  if (st.mood === 'party' && scene !== 'party') f = shaded(f)
   const heat = Math.max(0, Math.min(3, st.heat || 0))
   // 위험: 좌우로 떤다(자는 동안은 떨지 않는다).
   if (heat >= 3 && scene !== 'sleep') f = Object.assign({}, f, { x: clampX(f.x + (tick % 2 ? 1 : -1)) })
@@ -411,7 +460,8 @@ export function clawdFrameOf(st, ms) {
     if (free(left(f.x), up)) fx.push(mark(left(f.x), up, '~', STEAM))
     if (heat >= 3 && free(right(f.x) + 1, 1 - up)) fx.push(mark(right(f.x) + 1, 1 - up, '~', STEAM))
   }
-  return Object.assign({}, f, { fx, body: scene === 'sleep' && heat === 0 ? SLEEP_BODY : HEAT_COLORS[heat] })
+  const body = heat !== 0 ? HEAT_COLORS[heat] : scene === 'sleep' ? SLEEP_BODY : scene === 'gloom' ? GLOOM_BODY : HEAT_COLORS[0]
+  return Object.assign({}, f, { fx, body })
 }
 
 // ── 그리기 ──────────────────────────────────────────────────────────────────────
@@ -528,4 +578,4 @@ export function clawdFrame(st, ms) {
 export function clawdRest(x) {
   return fr(x, 0)
 }
-export const CLAWD_SCENES = Object.assign({ idle: IDLE, sleep: SLEEP, doze: DOZE }, LOOPS, ONCE)
+export const CLAWD_SCENES = Object.assign({ idle: IDLE, sleep: SLEEP, doze: DOZE, party: PARTY, gloom: GLOOM }, LOOPS, ONCE)

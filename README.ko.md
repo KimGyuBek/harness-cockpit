@@ -80,6 +80,8 @@ Claude Code 터미널 세션의 프롬프트에서 한 줄을 친다.
 | 높음 | CPU 80% 가 30초 또는 메모리 85% 또는 메모리 압력 경고 |
 | 위험 | CPU 95% 가 60초 또는 메모리 93% 또는 메모리 압력 위험 |
 
+**퇴근 무렵** — 평일 퇴근 5분 전부터 5분 뒤까지 Clawd 가 선글라스를 쓰고 춤춘다(자던 세션도 일어나고, 일하는 중에도 선글라스는 쓴다). 그 뒤 퇴근 1시간 뒤까지는 주저앉아 한숨 쉬고 눈물을 흘린다. 그 뒤로는 평소대로다.
+
 **뒤 하늘** — Clawd 칸 바탕이 아침 · 낮 · 노을 · 밤으로 바뀌고 구름 · 별이 뜬다.
 
 ![하늘 네 가지](docs/img/skies.png)
@@ -140,6 +142,7 @@ Claude Code 터미널 세션의 프롬프트에서 한 줄을 친다.
 | `/cockpit poll` | 요소별 폴링 주기 보기. `/cockpit poll sys 3` 처럼 바꾼다(저장됨) |
 | `/cockpit idle` | 이 세션의 마지막 활동 시각과 쉼 단계 |
 | `/cockpit fx bell\|hour` | 정해진 시각 · 정각 효과를 지금 한 번 재생 |
+| `/cockpit fx party\|gloom` | 퇴근 무렵의 기분을 10초 동안 미리 보기 |
 | `/cockpit config` | 읽힌 설정 요약. `/cockpit config reload` 로 다시 읽는다 |
 | `/clawd on\|off` | Clawd 켜기 · 끄기 |
 | `/fx` | 시작 효과 미리 보기(`/fx 1 3`) · 고르기(`/fx use 1 3`) · 끄기(`/fx off`) |
@@ -214,7 +217,7 @@ hooks/arc.js                      반원 · 퇴근 타이머 · 하늘 · 정각
 hooks/poll.js                     요소별 폴링 주기 · 맥 자원 읽기
 hooks/config.js                   설정 파일
 hooks/fx.js · mascot.js           시작 효과
-tests/                            단위 테스트 81개
+tests/                            단위 테스트 83개
 ```
 
 ```

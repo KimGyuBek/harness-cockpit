@@ -60,7 +60,7 @@ test('모든 장면: 줄 폭이 맞고, 엔진이 받는 글자만 쓰고, 0.45�
       prev = key
     }
     // 잠자는 장면은 1초에 한 장씩 넘겨 가만히 있는 것이 맞다(시각으로 고르고, 서로 다른 모습은 넷뿐이다).
-    if (name !== 'sleep' && name !== 'doze') expect(longest <= 2).toBe(true)
+    if (name !== 'sleep' && name !== 'doze' && name !== 'gloom') expect(longest <= 2).toBe(true)
     expect(seen.size >= 4).toBe(true)
   }
   // 쉬는 동안의 안무는 한 바퀴가 1분을 넘고 서로 다른 모습이 150가지를 넘는다.
@@ -190,4 +190,28 @@ test('엔터 「넵」 은 턴 시작 전에도 나오고, 5분 쉬면 졸고 15
   expect(new Set(rows).size >= 3).toBe(true)
   expect(CLAWD_SCENES.doze.every((f) => f.fx.length === 0)).toBe(true)
   expect(CLAWD_SCENES.doze.some((f) => f.y === 1)).toBe(true)
+})
+
+test('퇴근 무렵: 신날 때는 선글라스를 쓰고 춤추고(자던 세션도), 우울은 몸 색이 바뀌고 잠든 세션에는 걸지 않는다', async () => {
+  const base = { asking: false, busy: false, activity: 'think', sinceDone: -1, sinceErr: -1, sinceSubmit: -1, sinceCoin: -1, sinceBell: -1, hot: false, heat: 0, asleep: false, dozing: false, mood: '' }
+  const on = (o: object) => Object.assign({}, base, o)
+  expect(clawdScene(on({ mood: 'party' }))).toBe('party')
+  expect(clawdScene(on({ mood: 'party', asleep: true }))).toBe('party')
+  expect(clawdScene(on({ mood: 'party', busy: true }))).toBe('think')
+  expect(clawdScene(on({ mood: 'gloom' }))).toBe('gloom')
+  expect(clawdScene(on({ mood: 'gloom', dozing: true }))).toBe('gloom')
+  expect(clawdScene(on({ mood: 'gloom', asleep: true }))).toBe('sleep')
+  expect(clawdScene(on({ mood: 'gloom', busy: true }))).toBe('think')
+  // 검은 바탕(눈 · 선글라스) 칸 수: 평소 2칸, 선글라스는 그보다 많다.
+  const dark = (w: Uint32Array) => Array.from({ length: CLAWD_COLS * CLAWD_ROWS }, (_, i) => w[i * 3 + 2]).filter((bg) => bg === 0x000000).length
+  expect(dark(clawdWords(clawdRest(8)))).toBe(2)
+  for (const ms of [0, 150, 300, 600, 900]) expect(dark(clawdWords(clawdFrameOf(on({ mood: 'party' }), ms))) >= 5).toBe(true)
+  // 일하는 중에도 신나는 시간에는 선글라스를 쓴다(정면 자세일 때).
+  expect(dark(clawdWords(clawdFrameOf(on({ mood: 'party', busy: true, activity: 'read' }), 0))) >= 5).toBe(true)
+  expect(dark(clawdWords(clawdFrameOf(on({ busy: true, activity: 'read' }), 0)))).toBe(2)
+  // 우울: 몸 색이 바뀌고(자원 단계가 평소일 때만), 선글라스는 없다.
+  expect(clawdFrameOf(on({ mood: 'gloom' }), 0).body).toBe(0x8c98b3)
+  expect(clawdFrameOf(on({ mood: 'gloom', heat: 2 }), 0).body).toBe(HEAT_COLORS[2])
+  expect(dark(clawdWords(clawdFrameOf(on({ mood: 'gloom' }), 0))) <= 2).toBe(true)
+  expect(CLAWD_SCENES.party.some((f) => f.fx.some((m) => m.ch === '♪'))).toBe(true)
 })

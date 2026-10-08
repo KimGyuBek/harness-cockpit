@@ -159,6 +159,19 @@ export function sleepSky() {
   return { phase: 'night', rows: SKY.night, stars: true, cloud: false, glow: false, showOrb: true, orb: { cx: 1, cy: 0, ch: '◗', color: 0xffd23f } }
 }
 
+// 퇴근 무렵 Clawd 의 기분. 평일에만 본다.
+// 퇴근 5분 전부터 퇴근 5분 뒤까지는 신남(party — 선글라스), 그 뒤 퇴근 1시간 뒤까지는 우울(gloom), 그 밖에는 없음.
+// 기본 퇴근 18:00 이면 17:55~18:05 신남 · 18:05~19:00 우울 · 19:00 부터는 평소대로다.
+export const MOOD_PARTY_MIN = 5
+export const MOOD_END_MIN = 60
+export function quitMood(min, dow, end = QUIT_MIN) {
+  if (dow === 0 || dow === 6) return ''
+  const d = min - end
+  if (d >= -MOOD_PARTY_MIN && d < MOOD_PARTY_MIN) return 'party'
+  if (d >= MOOD_PARTY_MIN && d < MOOD_END_MIN) return 'gloom'
+  return ''
+}
+
 // 주간 띠: 평일 다섯 글자. 오늘은 밝게, 지난 날은 흐리게, 남은 날은 더 흐리게. 주말에는 그 요일을 끝에 붙인다.
 export function weekSpans(dow) {
   const weekend = dow === 0 || dow === 6
