@@ -1,0 +1,60 @@
+{
+  "repos": [
+    {
+      "match": "/work/shop(/|$)",
+      "family": "red"
+    },
+    {
+      "match": "/work/shop/api",
+      "name": "Shop-API",
+      "color": "error"
+    },
+    {
+      "match": "/work/shop/web",
+      "name": "Shop-Web",
+      "color": "#4D9BFF"
+    },
+    {
+      "match": "/work/shop(/|$)",
+      "brand": "Shop",
+      "word": "SHOP"
+    },
+    {
+      "match": "/work/desk(/|$)",
+      "name": "Desk",
+      "color": "#39C5BB",
+      "brand": "Desk",
+      "word": "DESK"
+    }
+  ],
+  "alertFiles": [
+    {
+      "path": "/tmp/.allow-prod-once",
+      "label": "prod"
+    }
+  ],
+  "alert": {
+    "title": "Approval flag",
+    "note": "the next production query will pass"
+  },
+  "branchKey": "(shop|desk)-[0-9]+",
+  "branchKeyFlags": "i",
+  "serviceWindow": {
+    "label": "dev server",
+    "startHour": 9,
+    "endHour": 21
+  },
+  "issue": {
+    "mcpServer": "linear",
+    "keyPattern": "^[A-Z]+-[0-9]+$"
+  },
+  "location": {
+    "lat": 51.48,
+    "lon": 0.0
+  },
+  "quitTime": "18:00",
+  "bells": [
+    "12:00"
+  ],
+  "verifyCommand": "make check"
+}

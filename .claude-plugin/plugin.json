@@ -1,0 +1,18 @@
+{
+  "name": "harness-cockpit",
+  "version": "0.2.0",
+  "description": "A Claude Code mod that puts a live status band above the prompt: progress steps, context and rate-limit usage, subagents, a sun-arc clock with an end-of-day countdown, and Clawd. 프롬프트 위 띠에 진행 단계 · 사용량 · 서브에이전트 · 시간 · Clawd 를 보여 주는 보기 전용 mod.",
+  "author": {
+    "name": "KimGyuBek"
+  },
+  "repository": "https://github.com/KimGyuBek/harness-cockpit",
+  "keywords": [
+    "claude-code",
+    "mod",
+    "statusline",
+    "status-band",
+    "usage",
+    "subagents",
+    "clawd"
+  ]
+}

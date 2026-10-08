@@ -1,0 +1,9 @@
+.DS_Store
+# 엔진이 mod 를 읽을 때 만드는 타입 선언(연결된 MCP 도구 이름이 들어간다) — 올리지 않는다
+.claude-plugin/types/
+*.pem
+*.key
+.env
+.env.*
+# 편집 도구가 폴더에 남기는 것
+.serena/
