@@ -38,7 +38,7 @@ import {
 } from './model.js'
 import { band, pane, agentStatus, monitorLine, leftoversText, arcFits } from './view.js'
 import { clawdFrame } from './clawd.js'
-import { sunTimes, quitTimer, arcCells, weekSpans, chimeAt, skyOf, sleepSky, SKY_PHASES, SUN_FIXED } from './arc.js'
+import { sunTimes, quitTimer, quitMood, arcCells, weekSpans, chimeAt, skyOf, sleepSky, SKY_PHASES, SUN_FIXED } from './arc.js'
 import { normalizePoll, setPoll, pollText, due, SYS_CMD, parseSys, smoothCpu, sustain, sysLevel, parseAwake, shouldSample, SLEEP_FACTOR } from './poll.js'
 import { setConfig, getConfig, configText } from './config.js'
 import { FX, draw, bootCard, parseBoard, devWindow, dateTexts, repoOf, normalizeChoice, parseIds, introLayout } from './fx.js'
@@ -245,7 +245,7 @@ function skyNow() {
     sun = sunOf(c.d)
   }
   // 잠든 세션은 낮이어도 밤하늘에 달을 띄운다(미리 보기를 켜 둔 동안은 미리 보기가 먼저다).
-  if (idleNow >= 1 && !skyForce) return sleepSky()
+  if (idleNow >= 1 && !skyForce && moodNow() !== 'party') return sleepSky()
   // 시간대를 미리 볼 때는 그 시간대의 한가운데 시각으로 그린다.
   const at = { morning: 450, day: 780, sunset: sun.set - 20, night: 1290 }[skyForce]
   return Object.assign({}, skyOf(at === undefined ? c.min : at, sun.rise, sun.set), { showOrb: !arcFits(bodyCols, clawdOn) })
@@ -267,6 +267,15 @@ function arcNow() {
   return arcCells({ min: c.min, rise: sun.rise, set: sun.set, timer, tick: timer.blink && idleNow < 1 ? Math.floor(t / 1000) : 0, flash: flashPhase(t) })
 }
 
+// 퇴근 무렵의 기분. `/cockpit fx party|gloom` 으로 10초 동안 미리 볼 수 있다(moodForce).
+let moodForce = ''
+let moodForceUntil = 0
+function moodNow() {
+  if (moodForce && now() < moodForceUntil) return moodForce
+  const c = clockNow()
+  return quitMood(c.min, c.dow, getConfig().quitMin)
+}
+
 function clawdNow() {
   const t = now()
   const since = (at) => (at ? t - at : -1)
@@ -284,6 +293,7 @@ function clawdNow() {
       heat,
       asleep: idleNow >= 1,
       dozing: isDozing(t, lastActiveAt, work().working, idleCfg),
+      mood: moodNow(),
       sky: skyOn ? skyNow() : null,
     },
     t,
@@ -987,7 +997,7 @@ export function register(on) {
       const fx = (bellAt && t - bellAt < 2600) || (flashAt && t - flashAt < 2250)
       // Clawd 는 띠를 다시 그리지 않고 그림 칸만 갈아 끼운다. 띠가 접혀 있으면 엔진이 거절하고 끝난다.
       // 잠든 세션은 1초에 한 번만 그린다(효과가 재생되는 동안은 평소 속도).
-      if (clawdOn && bandId && (idleNow < 1 || fx || frame % 7 === 0)) $.ui.blit({ requestId: bandId, key: 'clawd', cells: clawdNow() }).catch(() => {})
+      if (clawdOn && bandId && (idleNow < 1 || fx || frame % 7 === 0 || moodNow() === 'party')) $.ui.blit({ requestId: bandId, key: 'clawd', cells: clawdNow() }).catch(() => {})
       // 반원: 정각 반짝임 동안은 매 프레임, 평소에는 1초에 한 번(가운데 점 깜빡임). 잠든 세션은 분이 바뀔 때만 달라진다.
       if (flashAt && t - flashAt < 2250) blitArc($)
       else if (frame % 7 === 0) blitArc($)
@@ -1377,9 +1387,14 @@ export function register(on) {
     }
     // /cockpit fx bell|hour — 정해진 시각 · 정각 효과를 지금 한 번 재생한다.
     if (a[0] === 'fx') {
+      if (a[1] === 'party' || a[1] === 'gloom') {
+        moodForce = a[1]
+        moodForceUntil = now() + 10000
+        return { text: (a[1] === 'party' ? '퇴근 직전 기분(선글라스 · 춤)' : '퇴근이 늦어진 기분(우울)') + '을 10초 동안 미리 본다' }
+      }
       if (a[1] === 'bell') bellAt = now()
       else if (a[1] === 'hour') flashAt = now()
-      else return { text: '/cockpit fx bell — 정해진 시각 효과(Clawd 종) · /cockpit fx hour — 정각 효과(해 반짝)' }
+      else return { text: '/cockpit fx bell — 정해진 시각 효과(Clawd 종) · /cockpit fx hour — 정각 효과(해 반짝) · /cockpit fx party — 퇴근 직전 · /cockpit fx gloom — 퇴근이 늦어질 때' }
       return { text: a[1] === 'bell' ? '정해진 시각 효과(Clawd 종) 재생' : '정각 효과(해 반짝) 재생' }
     }
     paneAsked = true

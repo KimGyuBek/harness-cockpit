@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { ARC_COLS, ARC_ROWS, sunTimes, quitTimer, sunColor, orbit, arcWords, weekSpans, chimeAt, skyPhase, skyOf, sleepSky } from '../hooks/arc.js'
+import { ARC_COLS, ARC_ROWS, sunTimes, quitTimer, sunColor, orbit, arcWords, weekSpans, chimeAt, skyPhase, skyOf, sleepSky, quitMood } from '../hooks/arc.js'
 
 const near = (a: number, b: number, tol: number) => Math.abs(a - b) <= tol
 
@@ -168,4 +168,22 @@ test('sleepSky: 잠든 세션은 시각과 상관없이 밤하늘 + 왼쪽 위 �
   expect(s.stars).toBe(true)
   expect(s.showOrb).toBe(true)
   expect(s.orb).toEqual({ cx: 1, cy: 0, ch: '◗', color: 0xffd23f })
+})
+
+test('quitMood: 퇴근 5분 전부터 신남, 5분 뒤부터 우울, 한 시간 뒤부터는 없음 · 주말 없음', async () => {
+  // 기본 퇴근 18:00(1080분) · 목요일(4).
+  expect(quitMood(1074, 4)).toBe('')
+  expect(quitMood(1075, 4)).toBe('party')
+  expect(quitMood(1080, 4)).toBe('party')
+  expect(quitMood(1084, 4)).toBe('party')
+  expect(quitMood(1085, 4)).toBe('gloom')
+  expect(quitMood(1139, 4)).toBe('gloom')
+  expect(quitMood(1140, 4)).toBe('')
+  expect(quitMood(1300, 4)).toBe('')
+  expect(quitMood(1080, 6)).toBe('')
+  expect(quitMood(1080, 0)).toBe('')
+  // 퇴근 시각을 바꾸면 같이 옮겨 간다.
+  expect(quitMood(1046, 2, 1050)).toBe('party')
+  expect(quitMood(1056, 2, 1050)).toBe('gloom')
+  expect(quitMood(1110, 2, 1050)).toBe('')
 })

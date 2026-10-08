@@ -79,6 +79,8 @@ The mascot on the left moves with the session: pacing while thinking, reading, h
 | High | CPU 80 % for 30 s, or memory 85 %, or a memory-pressure warning |
 | Critical | CPU 95 % for 60 s, or memory 93 %, or critical memory pressure |
 
+**Quitting time** — on weekdays, from five minutes before the end of the workday until five minutes after, Clawd puts on sunglasses and dances (even in a sleeping session, and it keeps the sunglasses on while working). From then until an hour after, it slumps, sighs and sheds a tear. After that it is back to normal.
+
 **Sky** — the cells behind Clawd change with the time of day: morning, day, sunset, night, with clouds and stars.
 
 ![Four skies](docs/img/skies.png)
@@ -139,6 +141,7 @@ No text, only motion. They play in every open session at once.
 | `/cockpit poll` | show polling intervals; change one with `/cockpit poll sys 3` (saved) |
 | `/cockpit idle` | this session's last activity and idle stage |
 | `/cockpit fx bell\|hour` | play a time effect now |
+| `/cockpit fx party\|gloom` | preview the quitting-time moods for ten seconds |
 | `/cockpit config` | show what was read from the config file; `/cockpit config reload` re-reads it |
 | `/clawd on\|off` | show or hide Clawd |
 | `/fx` | start effects — preview `/fx 1 3`, choose `/fx use 1 3`, disable `/fx off` |
@@ -229,7 +232,7 @@ hooks/arc.js                      sun arc, countdown, sky, time effects
 hooks/poll.js                     polling intervals, machine load parsing
 hooks/config.js                   the optional config file
 hooks/fx.js · mascot.js           start effects
-tests/                            81 unit tests
+tests/                            83 unit tests
 ```
 
 ```
